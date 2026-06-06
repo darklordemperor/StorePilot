@@ -1,0 +1,52 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: storepilot-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-storepilot}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-storepilot}
+      POSTGRES_DB: ${POSTGRES_DB:-storepilot}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-storepilot} -d ${POSTGRES_DB:-storepilot}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./nestbackend
+    container_name: storepilot-backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      PORT: 3001
+      DATABASE_URL: ${DATABASE_URL:-postgresql://storepilot:storepilot@postgres:5432/storepilot?schema=public}
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+    ports:
+      - "${BACKEND_PORT:-3001}:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./nextjsfrontend
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001/api}
+    container_name: storepilot-frontend
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001/api}
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:

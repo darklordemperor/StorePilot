@@ -1,0 +1,25 @@
+{
+  "name": "storepilot",
+  "version": "0.1.0",
+  "private": true,
+  "description": "StorePilot monorepo with Next.js frontend and NestJS backend.",
+  "workspaces": [
+    "nextjsfrontend",
+    "nestbackend"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
+    "dev:frontend": "npm --workspace nextjsfrontend run dev",
+    "dev:backend": "npm --workspace nestbackend run start:dev",
+    "build": "npm --workspace nextjsfrontend run build && npm --workspace nestbackend run build",
+    "lint": "npm --workspace nextjsfrontend run lint && npm --workspace nestbackend run lint",
+    "test": "npm --workspace nestbackend run test",
+    "db:generate": "npm --workspace nestbackend run prisma:generate",
+    "db:migrate": "npm --workspace nestbackend run prisma:migrate",
+    "docker:up": "docker compose up --build",
+    "docker:down": "docker compose down"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
