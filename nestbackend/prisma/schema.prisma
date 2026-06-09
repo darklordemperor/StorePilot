@@ -7,11 +7,216 @@ datasource db {
   provider = "postgresql"
 }
 
+enum Role {
+  OWNER
+  MANAGER
+  STAFF
+}
+
+enum StockMovementType {
+  IN
+  OUT
+  ADJUSTMENT
+  SALE
+  RETURN
+}
+
+enum SalesOrderStatus {
+  DRAFT
+  COMPLETED
+  CANCELLED
+  REFUNDED
+}
+
 model User {
-  id           String   @id @default(uuid())
-  email        String   @unique
-  passwordHash String
-  name         String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id            String         @id @default(uuid())
+  email         String         @unique
+  passwordHash  String
+  name          String?
+  role          Role           @default(STAFF)
+  storeId       String?
+  branchId      String?
+  store         Store?         @relation(fields: [storeId], references: [id], onDelete: SetNull)
+  branch        Branch?        @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  refreshTokens RefreshToken[]
+  salesOrders   SalesOrder[]
+  stockMovements StockMovement[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@index([storeId])
+  @@index([branchId])
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  tokenHash String
+  expiresAt DateTime
+  revokedAt DateTime?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model Store {
+  id          String       @id @default(uuid())
+  name        String
+  code        String?      @unique
+  description String?
+  branches    Branch[]
+  users       User[]
+  categories  Category[]
+  products    Product[]
+  customers   Customer[]
+  salesOrders SalesOrder[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model Branch {
+  id             String           @id @default(uuid())
+  name           String
+  code           String?
+  address        String?
+  storeId        String
+  store          Store            @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  users          User[]
+  inventoryStock InventoryStock[]
+  stockMovements StockMovement[]
+  salesOrders    SalesOrder[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@unique([storeId, code])
+  @@index([storeId])
+}
+
+model Category {
+  id          String    @id @default(uuid())
+  name        String
+  description String?
+  storeId     String
+  store       Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  products    Product[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([storeId, name])
+  @@index([storeId])
+}
+
+model Product {
+  id              String           @id @default(uuid())
+  name            String
+  sku             String
+  description     String?
+  price           Decimal          @default(0)
+  cost            Decimal          @default(0)
+  isActive        Boolean          @default(true)
+  storeId         String
+  categoryId      String?
+  store           Store            @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  category        Category?        @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  inventoryStock  InventoryStock[]
+  stockMovements  StockMovement[]
+  salesOrderItems SalesOrderItem[]
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@unique([storeId, sku])
+  @@index([storeId])
+  @@index([categoryId])
+}
+
+model InventoryStock {
+  id        String   @id @default(uuid())
+  quantity  Int      @default(0)
+  productId String
+  branchId  String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  branch    Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([productId, branchId])
+  @@index([branchId])
+}
+
+model StockMovement {
+  id           String            @id @default(uuid())
+  type         StockMovementType
+  quantity     Int
+  note         String?
+  productId    String
+  branchId     String
+  userId       String?
+  salesOrderId String?
+  product      Product           @relation(fields: [productId], references: [id], onDelete: Cascade)
+  branch       Branch            @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  user         User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
+  salesOrder   SalesOrder?       @relation(fields: [salesOrderId], references: [id], onDelete: SetNull)
+  createdAt    DateTime          @default(now())
+
+  @@index([productId])
+  @@index([branchId])
+  @@index([userId])
+  @@index([salesOrderId])
+}
+
+model Customer {
+  id          String       @id @default(uuid())
+  name        String
+  email       String?
+  phone       String?
+  address     String?
+  storeId     String
+  store       Store        @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  salesOrders SalesOrder[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([storeId])
+}
+
+model SalesOrder {
+  id             String             @id @default(uuid())
+  orderNumber    String
+  status         SalesOrderStatus   @default(COMPLETED)
+  totalAmount    Decimal            @default(0)
+  storeId        String
+  branchId       String
+  customerId     String?
+  userId         String?
+  store          Store              @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  branch         Branch             @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  customer       Customer?          @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  user           User?              @relation(fields: [userId], references: [id], onDelete: SetNull)
+  items          SalesOrderItem[]
+  stockMovements StockMovement[]
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  @@unique([storeId, orderNumber])
+  @@index([storeId])
+  @@index([branchId])
+  @@index([customerId])
+  @@index([userId])
+}
+
+model SalesOrderItem {
+  id           String     @id @default(uuid())
+  quantity     Int
+  unitPrice    Decimal
+  lineTotal    Decimal
+  salesOrderId String
+  productId    String
+  salesOrder   SalesOrder @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
+  product      Product    @relation(fields: [productId], references: [id], onDelete: Restrict)
+  createdAt    DateTime   @default(now())
+
+  @@index([salesOrderId])
+  @@index([productId])
 }

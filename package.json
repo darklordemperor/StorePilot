@@ -16,10 +16,14 @@
     "test": "npm --workspace nestbackend run test",
     "db:generate": "npm --workspace nestbackend run prisma:generate",
     "db:migrate": "npm --workspace nestbackend run prisma:migrate",
+    "db:deploy": "npm --workspace nestbackend run prisma:deploy",
+    "db:seed": "npm --workspace nestbackend run prisma:seed",
+    "verify": "npm run db:generate && npm run lint && npm run test && npm run build && docker compose config",
     "docker:up": "docker compose up --build",
     "docker:down": "docker compose down"
   },
   "devDependencies": {
+    "@types/passport-jwt": "^4.0.1",
     "concurrently": "^9.2.1"
   }
 }
