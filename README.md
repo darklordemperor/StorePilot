@@ -1,124 +1,178 @@
 # StorePilot
 
-StorePilot is a full-stack retail operations dashboard built for portfolio-quality demonstration. It combines a polished Next.js admin UI with a NestJS API, PostgreSQL, Prisma, Docker Compose, JWT auth, role-based access, Swagger docs, seed data, and service tests.
+StorePilot is a portfolio-ready fullstack retail operations dashboard. It pairs a role-aware Next.js admin console with a NestJS API, PostgreSQL, Prisma migrations, JWT auth, Swagger docs, seed data, and Docker Compose.
 
-## Tech Stack
+## Features
 
-- Next.js App Router, TypeScript, Tailwind CSS
-- NestJS, TypeScript, Swagger
-- PostgreSQL
-- Prisma ORM and migrations
-- Docker Compose
-- JWT access tokens and refresh tokens
-- Roles: `OWNER`, `MANAGER`, `STAFF`
+- Next.js App Router dashboard with Thai/English language switching
+- Light, dark, and system theme modes persisted in localStorage
+- Role-aware UI for `OWNER`, `MANAGER`, and `STAFF`
+- NestJS backend RBAC as the source of truth
+- Products, stores, branches, inventory, stock movements, customers, and sales orders
+- Standard API error responses: `{ statusCode, code, message, path, timestamp }`
+- Swagger API documentation
+- Optional Nginx reverse proxy profile for production-style routing
 
-## Project Structure
+## Architecture
 
 ```text
 StorePilot/
-  nextjsfrontend/    Next.js dashboard UI
-  nestbackend/       NestJS API, Prisma schema, migrations, seed data
-  docker-compose.yml PostgreSQL, backend, and frontend services
+  nextjsfrontend/       Next.js dashboard UI
+  nestbackend/          NestJS API, Prisma schema, migrations, seed data
+  nginx/                Optional reverse proxy config
+  docker-compose.yml    PostgreSQL, backend, frontend, optional Nginx
 ```
 
-## Environment Variables
-
-Copy the root example file before running Docker:
-
-```bash
-cp .env.example .env
+```mermaid
+flowchart LR
+  Browser["Browser / Next.js UI"] --> API["NestJS API /api"]
+  API --> Prisma["Prisma Client"]
+  Prisma --> Postgres["PostgreSQL"]
+  Browser -. optional .-> Nginx["Nginx proxy profile"]
+  Nginx --> API
 ```
 
-Root `.env.example`:
+## Tech Stack
+
+- Frontend: Next.js 16, React 19, TypeScript, Tailwind CSS, lucide-react
+- Backend: NestJS 11, TypeScript, Swagger, JWT, Passport
+- Database: PostgreSQL 16, Prisma ORM
+- Tooling: npm workspaces, Docker Compose, Jest
+
+## Local Setup on Windows
+
+Install dependencies:
+
+```powershell
+npm install
+```
+
+Start PostgreSQL. The local host port is `5433` to avoid conflicts with a Windows PostgreSQL install on `5432`.
+
+```powershell
+docker compose up -d postgres
+```
+
+Generate Prisma client, apply migrations, and seed demo data:
+
+```powershell
+npm.cmd run db:generate
+npm.cmd run db:migrate
+npm.cmd run db:seed
+```
+
+Start frontend and backend together:
+
+```powershell
+npm.cmd run dev
+```
+
+Open:
+
+- Frontend: `http://localhost:3000`
+- Backend health: `http://localhost:3001/api/health`
+- Swagger docs: `http://localhost:3001/api/docs`
+
+## Environment
+
+Copy the root example file:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Important local values:
 
 ```env
-POSTGRES_USER=storepilot
-POSTGRES_PASSWORD=storepilot
-POSTGRES_DB=storepilot
+POSTGRES_PORT=5433
 DATABASE_URL=postgresql://storepilot:storepilot@postgres:5432/storepilot?schema=public
-JWT_SECRET=change-me-in-production
 BACKEND_PORT=3001
 FRONTEND_PORT=3000
-FRONTEND_ORIGIN=http://localhost:3000
 NEXT_PUBLIC_API_URL=http://localhost:3001/api
 ```
 
-For local backend development outside Docker, use `nestbackend/.env.example` and set `DATABASE_URL` to `localhost`.
+For running the Nest backend outside Docker, use `nestbackend/.env` with:
 
-## Local Setup
-
-Install dependencies and generate Prisma client:
-
-```bash
-npm install
-npm run db:generate
+```env
+DATABASE_URL=postgresql://storepilot:storepilot@localhost:5433/storepilot?schema=public
 ```
 
-Run PostgreSQL with Docker, then migrate and seed:
+## Prisma Note
 
-```bash
-docker compose up -d postgres
-npm run db:migrate
-npm run db:seed
-```
-
-Start both apps:
-
-```bash
-npm run dev
-```
-
-Frontend: `http://localhost:3000`
-
-Backend API: `http://localhost:3001/api`
+Prisma is pinned to `7.7.0` in this project because Prisma `7.8.0` was quarantined by Windows Defender on this machine during local setup. Do not upgrade Prisma or run `npm audit fix --force` unless you intentionally re-test that environment issue.
 
 ## Demo Accounts
 
-After `npm run db:seed`, use password `password123` for:
+After seeding, all demo users use password `password123`.
 
-- `owner@storepilot.local`
-- `manager@storepilot.local`
-- `staff@storepilot.local`
+| Role | Email | Access |
+| --- | --- | --- |
+| OWNER | `owner@storepilot.local` | Full admin controls, settings, users, owner-only deletes |
+| MANAGER | `manager@storepilot.local` | Catalog, stock, customer, and order management |
+| STAFF | `staff@storepilot.local` | Sales workflow and read-only operational views |
 
-## Docker Compose Guide
+The frontend hides unavailable controls for clarity, but backend RBAC remains the source of truth. Forbidden API responses return HTTP `403` with the standard error shape.
+
+## Useful Commands
+
+```powershell
+npm.cmd run db:generate
+npm.cmd run db:migrate
+npm.cmd run db:seed
+npm.cmd --workspace nestbackend run build
+npm.cmd --workspace nextjsfrontend run build
+```
+
+Run the focused backend tests:
+
+```powershell
+npm.cmd --workspace nestbackend run test -- api-exception.filter.spec.ts --runInBand
+```
+
+## Docker Compose
+
+Run only the database for local development:
+
+```powershell
+docker compose up -d postgres
+```
 
 Run the full stack:
 
-```bash
+```powershell
 docker compose up --build
 ```
 
-The backend container runs `prisma migrate deploy` before starting, so a fresh Docker database receives the committed migrations automatically.
+Run with the optional Nginx proxy:
 
-Stop services:
-
-```bash
-docker compose down
+```powershell
+docker compose --profile proxy up --build
 ```
 
-Remove volumes for a clean database:
+Nginx listens on `http://localhost:8080` by default:
 
-```bash
-docker compose down -v
-```
+- `/` routes to the frontend
+- `/api` routes to the backend
+- `/api/docs` routes to Swagger
 
-## API Documentation
+Nginx is only a reverse proxy. It does not mask or rewrite API 400-series errors.
 
-Swagger UI is available after the backend starts:
+## Screenshots
 
-```text
-http://localhost:3001/api/docs
-```
+Add portfolio screenshots under `docs/screenshots/`.
 
-Use the Swagger `Authorize` button with a JWT access token returned by:
+Recommended captures:
 
-```text
-POST /api/auth/login
-```
+- `docs/screenshots/login-th.png`
+- `docs/screenshots/dashboard-overview-dark.png`
+- `docs/screenshots/products-owner.png`
+- `docs/screenshots/inventory-manager.png`
+- `docs/screenshots/sales-orders-staff.png`
+- `docs/screenshots/settings-forbidden.png`
 
-Important API areas:
+## API Areas
 
-- `/api/auth` register, login, refresh, logout, profile
+- `/api/auth`
 - `/api/users`
 - `/api/stores`
 - `/api/branches`
@@ -130,65 +184,3 @@ Important API areas:
 - `/api/sales-orders`
 - `/api/sales-order-items`
 - `/api/health`
-
-## Screenshots
-
-Add screenshots to `docs/screenshots/` when publishing the portfolio repo.
-
-Recommended captures:
-
-- `docs/screenshots/login.png`
-- `docs/screenshots/dashboard-overview.png`
-- `docs/screenshots/products.png`
-- `docs/screenshots/inventory.png`
-- `docs/screenshots/sales-orders.png`
-
-Suggested capture command once the app is running:
-
-```bash
-npm --workspace nextjsfrontend run dev
-```
-
-Then open `http://localhost:3000` and capture the listed pages.
-
-## Production Build Verification
-
-Run the full verification suite:
-
-```bash
-npm run verify
-```
-
-This runs:
-
-- Prisma client generation
-- Frontend and backend lint
-- Backend tests
-- Frontend and backend production builds
-- Docker Compose config validation
-
-Individual commands:
-
-```bash
-npm run db:generate
-npm run lint
-npm run test
-npm run build
-docker compose config
-```
-
-## Current Portfolio Scope
-
-Implemented:
-
-- Auth and RBAC structure
-- Store and branch management
-- Product and category APIs
-- Inventory stock and movement APIs
-- Customer APIs
-- Sales order and line item APIs
-- Dashboard UI pages for all major workflows
-- Seed data and demo accounts
-- Basic backend service tests
-- Prisma-aware API error handling
-- Loading and empty UI states

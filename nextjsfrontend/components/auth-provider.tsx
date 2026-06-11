@@ -4,7 +4,9 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
+  useState,
   useSyncExternalStore,
 } from "react";
 import { api } from "@/lib/api";
@@ -80,11 +82,16 @@ function persistAuth(authResponse: AuthResponse) {
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [isHydrated, setIsHydrated] = useState(false);
   const auth = useSyncExternalStore(
     subscribeToAuthStore,
     readStoredAuth,
     () => null,
   );
+
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
 
   const login = useCallback(async (input: LoginInput) => {
     const response = await api.login(input);
@@ -121,8 +128,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ auth, isLoading: false, login, register, logout, refresh }),
-    [auth, login, register, logout, refresh],
+    () => ({
+      auth: isHydrated ? auth : null,
+      isLoading: !isHydrated,
+      login,
+      register,
+      logout,
+      refresh,
+    }),
+    [auth, isHydrated, login, register, logout, refresh],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

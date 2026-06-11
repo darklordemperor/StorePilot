@@ -1,44 +1,70 @@
+"use client";
+
 import { Boxes, Download } from "lucide-react";
+import { useCallback } from "react";
 import { DashboardShell } from "@/components/dashboard-shell";
 import { Badge, DataTable, EmptyState, PageAction, Section, StatCard } from "@/components/dashboard-ui";
-import { inventory } from "@/lib/dashboard-data";
+import { ResourceState } from "@/components/resource-state";
+import { usePreferences } from "@/components/app-preferences-provider";
+import { api } from "@/lib/api";
+import type { InventoryStock } from "@/lib/api";
+import { formatCurrency, inventoryValue, lowStockCount, totalInventoryValue } from "@/lib/dashboard-data";
+import { useApiResource } from "@/lib/use-api-resource";
 
 export default function InventoryPage() {
+  const { t } = usePreferences();
+  const loadInventory = useCallback((token: string) => api.inventory(token), []);
+  const { data, error, isLoading, reload } = useApiResource<InventoryStock[]>(loadInventory, "dashboard:inventory");
+  const inventory = data ?? [];
+
   return (
     <DashboardShell
-      title="Inventory"
-      description="Monitor stock on hand by product and branch."
-      action={<PageAction><Download size={16} /> Export</PageAction>}
+      title={t("inventory")}
+      description={t("inventoryDescription")}
+      action={<PageAction><Download size={16} /> {t("export")}</PageAction>}
     >
       <div className="grid gap-4 md:grid-cols-3">
-        <StatCard label="Inventory value" value="$21,408" change="+4.2%" tone="emerald" />
-        <StatCard label="Reorder alerts" value="18" change="Across 4 branches" tone="amber" />
-        <StatCard label="Stock accuracy" value="98.1%" change="Last count" tone="blue" />
+        <StatCard label={t("value")} value={formatCurrency(totalInventoryValue(inventory))} change={t("active")} tone="emerald" />
+        <StatCard label={t("reorder")} value={String(lowStockCount(inventory))} change={t("reorderLevel")} tone="amber" />
+        <StatCard label={t("stock")} value={String(inventory.reduce((total, item) => total + item.quantity, 0))} change={t("onHand")} tone="blue" />
       </div>
 
       <div className="mt-6">
-        <Section title="Branch stock" aside={<Boxes size={16} className="text-slate-400" />}>
-          <DataTable
-            columns={["Product", "Branch", "On hand", "Reorder level", "Value", "Status"]}
-            rows={inventory.map((item) => [
-              <span key="product" className="font-semibold text-slate-950">{item.product}</span>,
-              item.branch,
-              item.onHand,
-              item.reorder,
-              item.value,
-              <Badge key="status" tone={item.onHand <= item.reorder ? "amber" : "emerald"}>
-                {item.onHand <= item.reorder ? "Reorder" : "Healthy"}
-              </Badge>,
-            ])}
-          />
+        <Section title={t("branchStock")} aside={<Boxes size={16} className="text-slate-400" />}>
+          <ResourceState
+            isLoading={isLoading}
+            error={error}
+            isEmpty={!inventory.length}
+            emptyTitle={t("empty")}
+            emptyDescription={t("emptyDescription")}
+            forbiddenTitle={t("forbidden")}
+            forbiddenDescription={t("forbiddenDescription")}
+            errorTitle={t("requestFailed")}
+            retryLabel={t("retry")}
+            onRetry={reload}
+          >
+            <DataTable
+              columns={[t("product"), t("branch"), t("onHand"), t("reorderLevel"), t("value"), t("status")]}
+              rows={inventory.map((item) => [
+                <span key="product" className="font-semibold text-slate-950 dark:text-slate-50">{item.product?.name ?? item.productId}</span>,
+                item.branch?.name ?? item.branchId,
+                item.quantity,
+                10,
+                formatCurrency(inventoryValue(item)),
+                <Badge key="status" tone={item.quantity <= 10 ? "amber" : "emerald"}>
+                  {item.quantity <= 10 ? t("reorder") : t("healthy")}
+                </Badge>,
+              ])}
+            />
+          </ResourceState>
         </Section>
       </div>
 
       <div className="mt-6">
-        <Section title="Transfer queue">
+        <Section title={t("transferQueue")}>
           <EmptyState
-            title="No pending stock transfers"
-            description="Branch-to-branch transfer requests will appear here once managers start moving inventory between locations."
+            title={t("noTransfers")}
+            description={t("noTransfersDescription")}
           />
         </Section>
       </div>
