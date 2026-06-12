@@ -34,6 +34,7 @@ describe('AuthService', () => {
       '$2a$12$Kw5V5q4k7tBvF4f1s6EzWeR2zRgrKcRGkN9AvZxse6V.CTaV87T7S',
     name: 'Store Owner',
     role: Role.OWNER,
+    isBanned: false,
     storeId: null,
     branchId: null,
     createdAt: new Date('2026-06-06T00:00:00.000Z'),
@@ -87,6 +88,7 @@ describe('AuthService', () => {
       email: user.email,
       name: user.name,
       role: user.role,
+      isBanned: false,
       createdAt: user.createdAt,
     });
     expect(prisma.refreshToken.create.mock.calls.length).toBeGreaterThan(0);
@@ -109,5 +111,13 @@ describe('AuthService', () => {
     await expect(
       service.login({ email: user.email, password: 'wrong-password' }),
     ).rejects.toBeInstanceOf(UnauthorizedException);
+  });
+
+  it('rejects banned users during login', async () => {
+    prisma.user.findUnique.mockResolvedValue({ ...user, isBanned: true });
+
+    await expect(
+      service.login({ email: user.email, password: 'password123' }),
+    ).rejects.toThrow('Your account is banned');
   });
 });

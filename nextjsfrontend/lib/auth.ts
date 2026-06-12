@@ -5,6 +5,7 @@ export type AuthUser = {
   email: string;
   name: string | null;
   role: Role;
+  isBanned: boolean;
   createdAt: string;
 };
 

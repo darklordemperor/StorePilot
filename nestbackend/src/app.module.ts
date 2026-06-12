@@ -13,6 +13,7 @@ import { ProductsModule } from './products/products.module';
 import { SalesOrderItemsModule } from './sales-order-items/sales-order-items.module';
 import { SalesOrdersModule } from './sales-orders/sales-orders.module';
 import { StockMovementsModule } from './stock-movements/stock-movements.module';
+import { StatisticsModule } from './statistics/statistics.module';
 import { StoresModule } from './stores/stores.module';
 import { UsersModule } from './users/users.module';
 
@@ -29,6 +30,7 @@ import { UsersModule } from './users/users.module';
     ProductsModule,
     InventoryModule,
     StockMovementsModule,
+    StatisticsModule,
     CustomersModule,
     SalesOrdersModule,
     SalesOrderItemsModule,

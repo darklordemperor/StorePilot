@@ -1,4 +1,5 @@
 import { BarChart3 } from "lucide-react";
+import { AppChromeControls } from "./app-chrome-controls";
 
 function SkeletonBlock({ className = "" }: { className?: string }) {
   return (
@@ -47,8 +48,7 @@ export function DashboardSkeleton() {
             </div>
             <div className="flex shrink-0 items-center gap-2">
               <SkeletonBlock className="h-10 w-24" />
-              <SkeletonBlock className="h-9 w-9" />
-              <SkeletonBlock className="h-9 w-16" />
+              <AppChromeControls />
             </div>
           </div>
           <div className="flex gap-2 overflow-x-auto px-5 pb-3 lg:hidden">

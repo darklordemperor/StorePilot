@@ -1,6 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsEmail,
+  IsBoolean,
   IsEnum,
   IsOptional,
   IsString,
@@ -30,6 +31,11 @@ export class UpdateUserDto {
   @IsOptional()
   @IsEnum(Role)
   role?: Role;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  isBanned?: boolean;
 
   @ApiPropertyOptional()
   @IsOptional()

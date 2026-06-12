@@ -9,7 +9,7 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
-import { api } from "@/lib/api";
+import { api, ApiError } from "@/lib/api";
 import type { AuthResponse, AuthState, LoginInput, RegisterInput } from "@/lib/auth";
 
 const STORAGE_KEY = "storepilot.auth";
@@ -22,7 +22,7 @@ type AuthContextValue = {
   login: (input: LoginInput) => Promise<void>;
   register: (input: RegisterInput) => Promise<void>;
   logout: () => Promise<void>;
-  refresh: () => Promise<void>;
+  refresh: () => Promise<AuthState | null>;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -81,8 +81,32 @@ function persistAuth(authResponse: AuthResponse) {
   return state;
 }
 
+function clearStoredAuth() {
+  window.localStorage.removeItem(STORAGE_KEY);
+  cachedAuthText = null;
+  cachedAuthState = null;
+  emitAuthChange();
+}
+
+function isJwtExpired(token: string) {
+  try {
+    const payload = JSON.parse(window.atob(token.split(".")[1])) as {
+      exp?: number;
+    };
+
+    if (!payload.exp) {
+      return true;
+    }
+
+    return payload.exp * 1000 <= Date.now() + 30_000;
+  } catch {
+    return true;
+  }
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isHydrated, setIsHydrated] = useState(false);
+  const [isSessionReady, setIsSessionReady] = useState(false);
   const auth = useSyncExternalStore(
     subscribeToAuthStore,
     readStoredAuth,
@@ -93,27 +117,86 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsHydrated(true);
   }, []);
 
+  useEffect(() => {
+    if (!isHydrated) {
+      return;
+    }
+
+    const current = readStoredAuth();
+
+    if (!current) {
+      setIsSessionReady(true);
+      return;
+    }
+
+    const existingAuth = current;
+    let cancelled = false;
+    setIsSessionReady(false);
+
+    async function validateSession() {
+      try {
+        if (isJwtExpired(existingAuth.accessToken)) {
+          const refreshed = await api.refresh(existingAuth.refreshToken);
+          if (!cancelled) {
+            persistAuth(refreshed);
+          }
+          return;
+        }
+
+        await api.me(existingAuth.accessToken);
+      } catch (err) {
+        if (err instanceof ApiError && err.status === 401) {
+          try {
+            const refreshed = await api.refresh(existingAuth.refreshToken);
+            if (!cancelled) {
+              persistAuth(refreshed);
+            }
+          } catch {
+            if (!cancelled) {
+              clearStoredAuth();
+            }
+          }
+          return;
+        }
+      } finally {
+        if (!cancelled) {
+          setIsSessionReady(true);
+        }
+      }
+    }
+
+    void validateSession();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isHydrated]);
+
   const login = useCallback(async (input: LoginInput) => {
     const response = await api.login(input);
     persistAuth(response);
+    setIsSessionReady(true);
   }, []);
 
   const register = useCallback(async (input: RegisterInput) => {
     const response = await api.register(input);
     persistAuth(response);
+    setIsSessionReady(true);
   }, []);
 
   const refresh = useCallback(async () => {
     const current = readStoredAuth();
 
     if (!current) {
-      window.localStorage.removeItem(STORAGE_KEY);
-      emitAuthChange();
-      return;
+      clearStoredAuth();
+      setIsSessionReady(true);
+      return null;
     }
 
     const response = await api.refresh(current.refreshToken);
-    persistAuth(response);
+    const nextAuth = persistAuth(response);
+    setIsSessionReady(true);
+    return nextAuth;
   }, []);
 
   const logout = useCallback(async () => {
@@ -123,20 +206,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await api.logout(current.refreshToken).catch(() => undefined);
     }
 
-    window.localStorage.removeItem(STORAGE_KEY);
-    emitAuthChange();
+    clearStoredAuth();
+    setIsSessionReady(true);
   }, []);
 
   const value = useMemo(
     () => ({
-      auth: isHydrated ? auth : null,
-      isLoading: !isHydrated,
+      auth: isHydrated && isSessionReady ? auth : null,
+      isLoading: !isHydrated || !isSessionReady,
       login,
       register,
       logout,
       refresh,
     }),
-    [auth, isHydrated, login, register, logout, refresh],
+    [auth, isHydrated, isSessionReady, login, register, logout, refresh],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

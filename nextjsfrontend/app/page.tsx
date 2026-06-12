@@ -3,11 +3,12 @@
 import { BarChart3, Boxes, Building2, ReceiptText } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
+import { AppChromeControls } from "@/components/app-chrome-controls";
 import { useAuth } from "@/components/auth-provider";
 import { usePreferences } from "@/components/app-preferences-provider";
 
 export default function Home() {
-  const { auth, logout } = useAuth();
+  const { auth, isLoading, logout } = useAuth();
   const { t } = usePreferences();
 
   return (
@@ -20,7 +21,8 @@ export default function Home() {
           StorePilot
         </Link>
         <div className="flex items-center gap-3 text-sm">
-          {auth ? (
+          <AppChromeControls />
+          {isLoading ? null : auth ? (
             <>
               <Link href="/dashboard" className="rounded-md border border-slate-200 bg-white px-4 py-2 font-medium text-slate-700 shadow-sm hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
                 {t("dashboard")}

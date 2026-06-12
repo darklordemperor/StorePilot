@@ -10,6 +10,7 @@ const userSelect = {
   email: true,
   name: true,
   role: true,
+  isBanned: true,
   storeId: true,
   branchId: true,
   createdAt: true,

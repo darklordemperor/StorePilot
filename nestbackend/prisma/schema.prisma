@@ -35,6 +35,7 @@ model User {
   passwordHash  String
   name          String?
   role          Role           @default(STAFF)
+  isBanned      Boolean        @default(false)
   storeId       String?
   branchId      String?
   store         Store?         @relation(fields: [storeId], references: [id], onDelete: SetNull)
@@ -220,4 +221,18 @@ model SalesOrderItem {
 
   @@index([salesOrderId])
   @@index([productId])
+}
+
+model BusinessStatistic {
+  id                String   @id @default(uuid())
+  date              DateTime @unique
+  revenue           Decimal  @default(0)
+  orderCount        Int      @default(0)
+  unitsSold         Int      @default(0)
+  productBuyCount   Int      @default(0)
+  productReturnCount Int     @default(0)
+  customerCount     Int      @default(0)
+  createdAt         DateTime @default(now())
+
+  @@index([date])
 }

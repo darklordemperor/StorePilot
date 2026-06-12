@@ -4,23 +4,20 @@ import {
   BarChart3,
   Boxes,
   Building2,
-  Globe2,
   LayoutDashboard,
   LogOut,
-  Moon,
   Package,
   ReceiptText,
   Settings,
   Shuffle,
-  Sun,
-  SunMoon,
   Users,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { AppChromeControls } from "@/components/app-chrome-controls";
 import { ProtectedRoute } from "@/components/protected-route";
 import { useAuth } from "@/components/auth-provider";
-import { usePreferences, type ThemeMode } from "@/components/app-preferences-provider";
+import { usePreferences } from "@/components/app-preferences-provider";
 import { canAdminUsers } from "@/lib/roles";
 import type { Role } from "@/lib/auth";
 import type { TranslationKey } from "@/lib/i18n";
@@ -56,7 +53,7 @@ export function DashboardShell({
 }) {
   const pathname = usePathname();
   const { auth, logout } = useAuth();
-  const { t, language, setLanguage, theme, setTheme } = usePreferences();
+  const { t } = usePreferences();
   const visibleNavItems = navItems.filter(
     (item) => !item.roles || (auth?.user.role && item.roles.includes(auth.user.role)),
   );
@@ -129,8 +126,7 @@ export function DashboardShell({
               </div>
               <div className="flex shrink-0 items-center gap-2">
                 {action}
-                <ThemeButton theme={theme} setTheme={setTheme} label={t("theme")} />
-                <LanguageButton language={language} setLanguage={setLanguage} label={t("language")} />
+                <AppChromeControls />
               </div>
             </div>
             <div className="flex gap-2 overflow-x-auto px-5 pb-3 lg:hidden">
@@ -158,59 +154,5 @@ export function DashboardShell({
         </div>
       </div>
     </ProtectedRoute>
-  );
-}
-
-function ThemeButton({
-  theme,
-  setTheme,
-  label,
-}: {
-  theme: ThemeMode;
-  setTheme: (theme: ThemeMode) => void;
-  label: string;
-}) {
-  const nextTheme: Record<ThemeMode, ThemeMode> = {
-    light: "system",
-    dark: "light",
-    system: "dark",
-  };
-  const Icon = theme === "light" ? Sun : theme === "dark" ? Moon : SunMoon;
-
-  return (
-    <button
-      type="button"
-      onClick={() => setTheme(nextTheme[theme])}
-      aria-label={label}
-      title={label}
-      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-900"
-    >
-      <Icon size={17} />
-    </button>
-  );
-}
-
-function LanguageButton({
-  language,
-  setLanguage,
-  label,
-}: {
-  language: "th" | "en";
-  setLanguage: (language: "th" | "en") => void;
-  label: string;
-}) {
-  const nextLanguage = language === "th" ? "en" : "th";
-
-  return (
-    <button
-      type="button"
-      onClick={() => setLanguage(nextLanguage)}
-      aria-label={label}
-      title={`${label}: ${language.toUpperCase()}`}
-      className="flex h-9 items-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-900"
-    >
-      <Globe2 size={16} />
-      {language.toUpperCase()}
-    </button>
   );
 }

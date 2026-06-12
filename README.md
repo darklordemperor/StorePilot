@@ -1,15 +1,41 @@
 # StorePilot
 
-StorePilot is a portfolio-ready fullstack retail operations dashboard. It pairs a role-aware Next.js admin console with a NestJS API, PostgreSQL, Prisma migrations, JWT auth, Swagger docs, seed data, and Docker Compose.
+StorePilot is a portfolio-ready fullstack retail operations dashboard. It pairs a role-aware Next.js operations console with a NestJS API, PostgreSQL, Prisma migrations, JWT auth, Swagger docs, seeded demo data, dashboard statistics, and Docker Compose.
+
+## Screenshots
+
+### Dashboard UI
+
+![Dashboard UI](nextjsfrontend/public/screenshots/dashboardUI.png)
+
+### Products
+
+![Products UI](nextjsfrontend/public/screenshots/productsUI.png)
+
+### Sales Orders
+
+![Sales orders UI](nextjsfrontend/public/screenshots/salesOrdersUI.png)
+
+### User Admin
+
+![Settings admin UI](nextjsfrontend/public/screenshots/settingsAdminUI.png)
+
+### Customers
+
+![Customers UI](nextjsfrontend/public/screenshots/customersUI.png)
 
 ## Features
 
-- Next.js App Router dashboard with Thai/English language switching
-- Light, dark, and system theme modes persisted in localStorage
+- Next.js App Router dashboard with responsive app chrome
+- Thai/English language switching, defaulting to Thai
+- Light, dark, and system theme modes persisted in `localStorage`
 - Role-aware UI for `OWNER`, `MANAGER`, and `STAFF`
-- NestJS backend RBAC as the source of truth
+- Backend RBAC as the source of truth for protected actions
+- Owner user administration: promote, demote, ban, unban, and delete users
 - Products, stores, branches, inventory, stock movements, customers, and sales orders
-- Standard API error responses: `{ statusCode, code, message, path, timestamp }`
+- Seeded business statistics from January 2025 through June 2026
+- Dashboard graphs for KPI cards, category mix, stacked activity, donut share, and ranked days
+- Standard API errors: `{ statusCode, code, message, path, timestamp }`
 - Swagger API documentation
 - Optional Nginx reverse proxy profile for production-style routing
 
@@ -29,6 +55,7 @@ flowchart LR
   API --> Prisma["Prisma Client"]
   Prisma --> Postgres["PostgreSQL"]
   Browser -. optional .-> Nginx["Nginx proxy profile"]
+  Nginx --> Browser
   Nginx --> API
 ```
 
@@ -36,7 +63,7 @@ flowchart LR
 
 - Frontend: Next.js 16, React 19, TypeScript, Tailwind CSS, lucide-react
 - Backend: NestJS 11, TypeScript, Swagger, JWT, Passport
-- Database: PostgreSQL 16, Prisma ORM
+- Database: PostgreSQL 16, Prisma ORM 7.7.0
 - Tooling: npm workspaces, Docker Compose, Jest
 
 ## Local Setup on Windows
@@ -85,7 +112,6 @@ Important local values:
 
 ```env
 POSTGRES_PORT=5433
-DATABASE_URL=postgresql://storepilot:storepilot@postgres:5432/storepilot?schema=public
 BACKEND_PORT=3001
 FRONTEND_PORT=3000
 NEXT_PUBLIC_API_URL=http://localhost:3001/api
@@ -99,7 +125,7 @@ DATABASE_URL=postgresql://storepilot:storepilot@localhost:5433/storepilot?schema
 
 ## Prisma Note
 
-Prisma is pinned to `7.7.0` in this project because Prisma `7.8.0` was quarantined by Windows Defender on this machine during local setup. Do not upgrade Prisma or run `npm audit fix --force` unless you intentionally re-test that environment issue.
+Prisma is pinned to `7.7.0` because Prisma `7.8.0` was quarantined by Windows Defender on this machine during local setup. Do not upgrade Prisma or run `npm audit fix --force` unless you intentionally re-test that environment issue.
 
 ## Demo Accounts
 
@@ -123,7 +149,7 @@ npm.cmd --workspace nestbackend run build
 npm.cmd --workspace nextjsfrontend run build
 ```
 
-Run the focused backend tests:
+Run focused backend tests:
 
 ```powershell
 npm.cmd --workspace nestbackend run test -- api-exception.filter.spec.ts --runInBand
@@ -157,19 +183,6 @@ Nginx listens on `http://localhost:8080` by default:
 
 Nginx is only a reverse proxy. It does not mask or rewrite API 400-series errors.
 
-## Screenshots
-
-Add portfolio screenshots under `docs/screenshots/`.
-
-Recommended captures:
-
-- `docs/screenshots/login-th.png`
-- `docs/screenshots/dashboard-overview-dark.png`
-- `docs/screenshots/products-owner.png`
-- `docs/screenshots/inventory-manager.png`
-- `docs/screenshots/sales-orders-staff.png`
-- `docs/screenshots/settings-forbidden.png`
-
 ## API Areas
 
 - `/api/auth`
@@ -180,6 +193,7 @@ Recommended captures:
 - `/api/products`
 - `/api/inventory-stock`
 - `/api/stock-movements`
+- `/api/statistics`
 - `/api/customers`
 - `/api/sales-orders`
 - `/api/sales-order-items`

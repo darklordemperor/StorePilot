@@ -94,8 +94,103 @@ export const api = {
   salesOrders(accessToken: string) {
     return request<SalesOrder[]>("/sales-orders", { accessToken });
   },
+  statistics(accessToken: string, input: StatisticsQuery) {
+    const params = new URLSearchParams();
+    params.set("period", input.period);
+    if (input.month) params.set("month", String(input.month));
+    if (input.year) params.set("year", String(input.year));
+
+    return request<StatisticsResponse>(`/statistics?${params.toString()}`, {
+      accessToken,
+    });
+  },
   users(accessToken: string) {
     return request<AuthResponse["user"][]>("/users", { accessToken });
+  },
+  updateUser(accessToken: string, id: string, input: Partial<AuthResponse["user"]>) {
+    return request<AuthResponse["user"]>(`/users/${id}`, {
+      method: "PATCH",
+      accessToken,
+      body: JSON.stringify(input),
+    });
+  },
+  deleteUser(accessToken: string, id: string) {
+    return request<AuthResponse["user"]>(`/users/${id}`, {
+      method: "DELETE",
+      accessToken,
+    });
+  },
+  createProduct(accessToken: string, input: CreateProductInput) {
+    return request<Product>("/products", {
+      method: "POST",
+      accessToken,
+      body: JSON.stringify(input),
+    });
+  },
+  deleteProduct(accessToken: string, id: string) {
+    return request<Product>(`/products/${id}`, {
+      method: "DELETE",
+      accessToken,
+    });
+  },
+  createBranch(accessToken: string, input: CreateBranchInput) {
+    return request<Branch>("/branches", {
+      method: "POST",
+      accessToken,
+      body: JSON.stringify(input),
+    });
+  },
+  deleteBranch(accessToken: string, id: string) {
+    return request<Branch>(`/branches/${id}`, {
+      method: "DELETE",
+      accessToken,
+    });
+  },
+  createStockMovement(accessToken: string, input: CreateStockMovementInput) {
+    return request<StockMovement>("/stock-movements", {
+      method: "POST",
+      accessToken,
+      body: JSON.stringify(input),
+    });
+  },
+  deleteStockMovement(accessToken: string, id: string) {
+    return request<StockMovement>(`/stock-movements/${id}`, {
+      method: "DELETE",
+      accessToken,
+    });
+  },
+  createCustomer(accessToken: string, input: CreateCustomerInput) {
+    return request<Customer>("/customers", {
+      method: "POST",
+      accessToken,
+      body: JSON.stringify(input),
+    });
+  },
+  deleteCustomer(accessToken: string, id: string) {
+    return request<Customer>(`/customers/${id}`, {
+      method: "DELETE",
+      accessToken,
+    });
+  },
+  createSalesOrder(accessToken: string, input: CreateSalesOrderInput) {
+    return request<SalesOrder>("/sales-orders", {
+      method: "POST",
+      accessToken,
+      body: JSON.stringify(input),
+    });
+  },
+  updateSalesOrder(accessToken: string, id: string, input: Partial<SalesOrder>) {
+    return request<SalesOrder>(`/sales-orders/${id}`, {
+      method: "PATCH",
+      accessToken,
+      body: JSON.stringify(input),
+    });
+  },
+  deleteSalesOrder(accessToken: string, id: string) {
+    return request<SalesOrder>(`/sales-orders/${id}`, {
+      method: "DELETE",
+      accessToken,
+    });
   },
 };
 
@@ -193,4 +288,84 @@ export type SalesOrder = {
     product?: Product;
   }>;
   createdAt: string;
+};
+
+export type CreateProductInput = {
+  name: string;
+  sku: string;
+  price: number;
+  cost?: number;
+  storeId: string;
+  categoryId?: string;
+  isActive?: boolean;
+};
+
+export type CreateBranchInput = {
+  name: string;
+  code?: string;
+  address?: string;
+  storeId: string;
+};
+
+export type CreateStockMovementInput = {
+  type: "IN" | "OUT" | "ADJUSTMENT" | "SALE" | "RETURN";
+  quantity: number;
+  productId: string;
+  branchId: string;
+  note?: string;
+};
+
+export type CreateCustomerInput = {
+  name: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  storeId: string;
+};
+
+export type CreateSalesOrderInput = {
+  orderNumber: string;
+  status?: "DRAFT" | "COMPLETED";
+  storeId: string;
+  branchId: string;
+  customerId?: string;
+  items: Array<{
+    productId: string;
+    quantity: number;
+    unitPrice?: number;
+  }>;
+};
+
+export type StatisticsPeriod = "week" | "month" | "year";
+
+export type StatisticsQuery = {
+  period: StatisticsPeriod;
+  month?: number;
+  year?: number;
+};
+
+export type StatisticsResponse = {
+  period: StatisticsPeriod;
+  month: number;
+  year: number;
+  startDate: string;
+  endDate: string;
+  totals: {
+    revenue: number;
+    orderCount: number;
+    unitsSold: number;
+    productBuyCount: number;
+    productReturnCount: number;
+    customerCount: number;
+  };
+  mix: Array<{ label: string; value: number }>;
+  series: Array<{
+    date: string;
+    revenue: number;
+    orderCount: number;
+    unitsSold: number;
+    productBuyCount: number;
+    productReturnCount: number;
+    customerCount: number;
+  }>;
 };

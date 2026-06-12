@@ -4,6 +4,7 @@ import { BarChart3 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
+import { AppChromeControls } from "@/components/app-chrome-controls";
 import { useAuth } from "@/components/auth-provider";
 import { usePreferences } from "@/components/app-preferences-provider";
 import { ApiError } from "@/lib/api";
@@ -39,6 +40,7 @@ export default function RegisterPage() {
 
   return (
     <main className="grid min-h-screen bg-slate-50 text-slate-950 lg:grid-cols-[1fr_520px] dark:bg-slate-950 dark:text-slate-50">
+      <AppChromeControls className="fixed right-6 top-6 z-20" />
       <section className="hidden content-center bg-slate-950 px-12 text-white lg:grid dark:bg-slate-900">
         <div className="max-w-xl">
           <div className="mb-8 flex h-11 w-11 items-center justify-center rounded-md bg-white text-slate-950">

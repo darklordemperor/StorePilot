@@ -22,6 +22,7 @@ async function main() {
   const passwordHash = await bcrypt.hash('password123', 12);
 
   await prisma.refreshToken.deleteMany();
+  await prisma.businessStatistic.deleteMany();
   await prisma.stockMovement.deleteMany();
   await prisma.salesOrderItem.deleteMany();
   await prisma.salesOrder.deleteMany();
@@ -245,10 +246,78 @@ async function main() {
     ],
   });
 
+  await prisma.businessStatistic.createMany({
+    data: createStatisticSeedData(),
+  });
+
   console.log('Seed complete. Demo accounts use password: password123');
   console.log('owner@storepilot.local');
   console.log('manager@storepilot.local');
   console.log('staff@storepilot.local');
+}
+
+function createStatisticSeedData() {
+  const rows: Array<{
+    date: Date;
+    revenue: number;
+    orderCount: number;
+    unitsSold: number;
+    productBuyCount: number;
+    productReturnCount: number;
+    customerCount: number;
+  }> = [];
+  const start = new Date(Date.UTC(2025, 0, 1));
+  const end = new Date(Date.UTC(2026, 5, 30));
+  const current = new Date(start);
+
+  while (current <= end) {
+    const dayIndex = Math.floor(
+      (current.getTime() - start.getTime()) / 86_400_000,
+    );
+    const month = current.getUTCMonth();
+    const dayOfWeek = current.getUTCDay();
+    const dayOfMonth = current.getUTCDate();
+    const seasonal = 1 + Math.sin((month / 12) * Math.PI * 2) * 0.32;
+    const weekendBoost = dayOfWeek === 0 || dayOfWeek === 6 ? 1.45 : 0.92;
+    const growth = 0.88 + dayIndex / 850;
+    const wave = 1 + Math.sin(dayIndex / 5) * 0.22 + Math.cos(dayIndex / 17) * 0.16;
+    const paydayBoost = dayOfMonth >= 25 || dayOfMonth <= 3 ? 1.28 : 1;
+    const campaignBoost =
+      (month === 10 && dayOfMonth >= 11 && dayOfMonth <= 15) ||
+      (month === 11 && dayOfMonth >= 20) ||
+      (month === 3 && dayOfMonth >= 10 && dayOfMonth <= 18)
+        ? 1.65
+        : 1;
+    const slowDayDip = dayOfWeek === 2 ? 0.72 : 1;
+    const stockoutDip = dayIndex % 47 >= 0 && dayIndex % 47 <= 2 ? 0.58 : 1;
+    const orderCount = Math.round(
+      (14 + (dayIndex % 19) + month * 2.4) *
+        seasonal *
+        weekendBoost *
+        paydayBoost *
+        campaignBoost *
+        slowDayDip *
+        stockoutDip,
+    );
+    const unitsSold = Math.round(orderCount * (1.7 + (dayIndex % 7) * 0.34));
+    const revenue = Number(
+      (unitsSold * (4.7 + month * 0.24) * growth * wave).toFixed(2),
+    );
+
+    rows.push({
+      date: new Date(current),
+      revenue,
+      orderCount,
+      unitsSold,
+      productBuyCount: Math.round(unitsSold * 0.62),
+      productReturnCount: Math.max(0, Math.round(orderCount * 0.04)),
+      customerCount: Math.round(8 + orderCount * 0.42 + (dayIndex % 7)),
+    });
+
+    current.setUTCDate(current.getUTCDate() + 1);
+  }
+
+  return rows;
 }
 
 main()

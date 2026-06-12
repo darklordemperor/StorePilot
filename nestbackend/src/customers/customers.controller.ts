@@ -25,6 +25,8 @@ import { CustomersService } from './customers.service';
 export class CustomersController {
   constructor(private readonly customersService: CustomersService) {}
 
+  @UseGuards(RolesGuard)
+  @Roles(Role.OWNER, Role.MANAGER)
   @Post()
   create(@Body() dto: CreateCustomerDto) {
     return this.customersService.create(dto);

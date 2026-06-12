@@ -19,12 +19,13 @@ type AuthUserRecord = {
   passwordHash: string;
   name: string | null;
   role: Role;
+  isBanned: boolean;
   createdAt: Date;
 };
 
 type PublicUser = Pick<
   AuthUserRecord,
-  'id' | 'email' | 'name' | 'role' | 'createdAt'
+  'id' | 'email' | 'name' | 'role' | 'isBanned' | 'createdAt'
 >;
 
 @Injectable()
@@ -66,6 +67,10 @@ export class AuthService {
 
     if (!user) {
       throw new UnauthorizedException('Invalid email or password');
+    }
+
+    if (user.isBanned) {
+      throw new UnauthorizedException('Your account is banned');
     }
 
     const isPasswordValid = await bcrypt.compare(
@@ -122,6 +127,7 @@ export class AuthService {
         email: true,
         name: true,
         role: true,
+        isBanned: true,
         createdAt: true,
       },
     });
@@ -177,6 +183,7 @@ export class AuthService {
       email: user.email,
       name: user.name,
       role: user.role,
+      isBanned: user.isBanned,
       createdAt: user.createdAt,
     };
   }
