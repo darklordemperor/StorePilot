@@ -3,7 +3,7 @@
 import { Plus, Search, Trash2 } from "lucide-react";
 import { FormEvent, useCallback, useState } from "react";
 import { DashboardShell } from "@/components/dashboard-shell";
-import { Badge, DataTable, EmptyState, Field, PageAction, Section } from "@/components/dashboard-ui";
+import { Badge, DataTable, EmptyState, PageAction, Section } from "@/components/dashboard-ui";
 import { ResourceState } from "@/components/resource-state";
 import { useAuth } from "@/components/auth-provider";
 import { usePreferences } from "@/components/app-preferences-provider";

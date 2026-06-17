@@ -8,7 +8,6 @@ import {
   PackageCheck,
   Plus,
   ShoppingCart,
-  TrendingUp,
 } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { DashboardShell } from "@/components/dashboard-shell";
@@ -26,11 +25,9 @@ import type {
   Store,
 } from "@/lib/api";
 import {
-  activeBranchCount,
   formatCurrency,
   formatDateTime,
   productStock,
-  totalSales,
 } from "@/lib/dashboard-data";
 import { useApiResource } from "@/lib/use-api-resource";
 
@@ -531,7 +528,7 @@ function StackedActivityChart({ statistics }: { statistics: StatisticsResponse }
           ))}
         </div>
         <div className="flex items-end gap-1 border-l border-b border-slate-200 pl-3 dark:border-slate-800">
-          {statistics.series.map((item, index) => {
+          {statistics.series.map((item) => {
             const segments = [
               item.orderCount,
               item.productBuyCount,
@@ -571,15 +568,20 @@ function StackedActivityChart({ statistics }: { statistics: StatisticsResponse }
 
 function DonutShareChart({ breakdown }: { breakdown: MetricBreakdown[] }) {
   const total = breakdown.reduce((sum, item) => sum + item.value, 0) || 1;
-  let cursor = 0;
   const gradient = breakdown
-    .map((item, index) => {
-      const start = cursor;
-      const end = cursor + (item.value / total) * 360;
-      cursor = end;
-      return `${metricColors[index]} ${start}deg ${end}deg`;
-    })
-    .join(", ");
+    .reduce(
+      (result, item, index) => {
+        const start = result.cursor;
+        const end = start + (item.value / total) * 360;
+
+        return {
+          cursor: end,
+          stops: [...result.stops, `${metricColors[index]} ${start}deg ${end}deg`],
+        };
+      },
+      { cursor: 0, stops: [] as string[] },
+    )
+    .stops.join(", ");
 
   return (
     <div className="grid min-h-80 items-center gap-6">

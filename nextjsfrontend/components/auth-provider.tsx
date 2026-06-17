@@ -114,7 +114,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   useEffect(() => {
-    setIsHydrated(true);
+    let cancelled = false;
+
+    queueMicrotask(() => {
+      if (!cancelled) {
+        setIsHydrated(true);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -122,16 +132,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
+    let cancelled = false;
     const current = readStoredAuth();
 
     if (!current) {
-      setIsSessionReady(true);
-      return;
+      queueMicrotask(() => {
+        if (!cancelled) {
+          setIsSessionReady(true);
+        }
+      });
+      return () => {
+        cancelled = true;
+      };
     }
 
     const existingAuth = current;
-    let cancelled = false;
-    setIsSessionReady(false);
+    queueMicrotask(() => {
+      if (!cancelled) {
+        setIsSessionReady(false);
+      }
+    });
 
     async function validateSession() {
       try {

@@ -8,7 +8,7 @@ import { ResourceState } from "@/components/resource-state";
 import { useAuth } from "@/components/auth-provider";
 import { usePreferences } from "@/components/app-preferences-provider";
 import { api, ApiError } from "@/lib/api";
-import type { Branch, Product, StockMovement } from "@/lib/api";
+import type { Branch, Product } from "@/lib/api";
 import { formatDateTime, movementQuantity } from "@/lib/dashboard-data";
 import { canManage } from "@/lib/roles";
 import { useApiResource } from "@/lib/use-api-resource";

@@ -60,8 +60,18 @@ export function AppPreferencesProvider({
   const [theme, setThemeState] = useState<ThemeMode>("system");
 
   useEffect(() => {
-    setLanguageState(readLanguage());
-    setThemeState(readTheme());
+    let cancelled = false;
+
+    queueMicrotask(() => {
+      if (!cancelled) {
+        setLanguageState(readLanguage());
+        setThemeState(readTheme());
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {

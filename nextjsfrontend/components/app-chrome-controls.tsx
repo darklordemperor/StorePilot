@@ -43,7 +43,7 @@ function ThemeButton({
       onClick={() => setTheme(nextTheme[theme])}
       aria-label={label}
       title={`${label}: ${theme}`}
-      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-900"
+      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-900"
     >
       <Icon size={17} />
     </button>
@@ -67,7 +67,7 @@ function LanguageButton({
       onClick={() => setLanguage(nextLanguage)}
       aria-label={label}
       title={`${label}: ${language.toUpperCase()}`}
-      className="flex h-9 items-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-900"
+      className="flex h-9 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-900"
     >
       <Globe2 size={16} />
       {language.toUpperCase()}

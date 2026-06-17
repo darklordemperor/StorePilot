@@ -32,14 +32,26 @@ export function useApiResource<T>(
   const reload = useCallback(() => setVersion((current) => current + 1), []);
 
   useEffect(() => {
+    let cancelled = false;
+
     if (!auth?.accessToken) {
-      setIsLoading(false);
-      return;
+      queueMicrotask(() => {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      });
+
+      return () => {
+        cancelled = true;
+      };
     }
 
-    let cancelled = false;
-    setIsLoading(!cacheKey || !resourceCache.has(cacheKey));
-    setError(null);
+    queueMicrotask(() => {
+      if (!cancelled) {
+        setIsLoading(!cacheKey || !resourceCache.has(cacheKey));
+        setError(null);
+      }
+    });
 
     load(auth.accessToken)
       .then((payload) => {
